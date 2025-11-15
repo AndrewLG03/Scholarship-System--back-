@@ -1,39 +1,40 @@
 // src/config/database.js
-const sql = require('mssql');
 require('dotenv').config();
+const mysql = require('mysql2/promise');
 
-const config = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    server: process.env.DB_SERVER,
-    database: process.env.DB_DATABASE,
-    port: Number(process.env.DB_PORT || 1433),
-    options: {
-        encrypt: false, // true si usas Azure
-        trustServerCertificate: process.env.DB_TRUST_SERVER_CERT === 'true'
-    },
-    pool: {
-        max: 10,
-        min: 0,
-        idleTimeoutMillis: 30000
-    }
-};
+// Pool de conexiones a MySQL / MariaDB
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost', // localhost
+  user: process.env.DB_USER,               // ProyectoDB
+  password: process.env.DB_PASSWORD,       // tu contraseña
+  database: process.env.DB_NAME,           // BecasDB
+  port: Number(process.env.DB_PORT) || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
+// Ejecutar Stored Procedures con parámetros nombrados
+async function executeSP(spName, params = {}) {
+  const conn = await pool.getConnection();
+  try {
+    const keys = Object.keys(params);
 
-let poolPromise = null;
+    const placeholders = keys.map(() => '?').join(',');
+    const sql = keys.length > 0
+      ? `CALL ${spName}(${placeholders})`
+      : `CALL ${spName}()`;
 
-async function getPool() {
-    if (poolPromise) return poolPromise;
-    poolPromise = sql.connect(config)
-        .then(pool => {
-        console.log('MSSQL pool conectado');
-        return pool;
-        })
-        .catch(err => {
-        console.error('Error conectando a MSSQL', err);
-        poolPromise = null;
-        throw err;
-        });
-    return poolPromise;
+    const values = Object.values(params);
+
+    const [rows] = await conn.query(sql, values);
+    return rows;
+  } finally {
+    conn.release();
+  }
 }
 
-module.exports = { sql, getPool };
+module.exports = {
+  pool,
+  testConnection,
+  executeSP,
+};
