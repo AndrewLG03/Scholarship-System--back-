@@ -1,75 +1,17 @@
 // src/services/trabajadora.social.service.js
 const { pool } = require('../config/database');
-// Lista todos los anuncios (para la TS)
-exports.listAnuncios = async () => {
-  const [rows] = await pool.query(
-    `SELECT a.id_anuncio,
-            a.titulo,
-            a.contenido,
-            a.visible_para,
-            a.fecha_publicacion,
-            u.nombre AS publicado_por_nombre
-     FROM anuncios a
-     LEFT JOIN usuarios u ON a.publicado_por = u.id_usuario
-     ORDER BY a.id_anuncio DESC`
-  );
-  return rows;
-};
 
-// Crea un nuevo anuncio
-exports.createAnuncio = async ({ titulo, contenido, visible_para, publicado_por }) => {
-  // Como fecha_publicacion es VARCHAR, usamos NOW() formateado desde MySQL
-  const [result] = await pool.query(
-    `INSERT INTO anuncios (titulo, contenido, visible_para, publicado_por, fecha_publicacion)
-     VALUES (?, ?, ?, ?, DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s'))`,
-    [titulo, contenido, visible_para, publicado_por]
-  );
+//
+// ======================= TIPOS DE BECA =======================
+//
 
-  return {
-    id_anuncio: result.insertId,
-    titulo,
-    contenido,
-    visible_para,
-    publicado_por,
-  };
-};
+const modalidadesPermitidas = [
+  'SOCIOECONOMICA',
+  'CULTURAL',
+  'ACADEMICA',
+  'DEPORTIVA'
+];
 
-// Actualiza un anuncio
-exports.updateAnuncio = async (idAnuncio, { titulo, contenido, visible_para }) => {
-  await pool.query(
-    `UPDATE anuncios
-     SET titulo = ?, contenido = ?, visible_para = ?
-     WHERE id_anuncio = ?`,
-    [titulo, contenido, visible_para, idAnuncio]
-  );
-
-  // Puedes devolver lo actualizado
-  const [rows] = await pool.query(
-    `SELECT a.id_anuncio,
-            a.titulo,
-            a.contenido,
-            a.visible_para,
-            a.fecha_publicacion,
-            u.nombre AS publicado_por_nombre
-     FROM anuncios a
-     LEFT JOIN usuarios u ON a.publicado_por = u.id_usuario
-     WHERE a.id_anuncio = ?`,
-    [idAnuncio]
-  );
-
-  return rows[0];
-};
-
-// Elimina un anuncio
-exports.deleteAnuncio = async (idAnuncio) => {
-  await pool.query(
-    'DELETE FROM anuncios WHERE id_anuncio = ?',
-    [idAnuncio]
-  );
-};
-//asignación de becas 
-
-const { pool } = require('../config/database');
 exports.listTiposBeca = async () => {
   const [rows] = await pool.query(
     `SELECT id_tipo_beca, codigo, nombre, modalidad, tope_mensual
@@ -78,6 +20,113 @@ exports.listTiposBeca = async () => {
   );
   return rows;
 };
+
+exports.createTipoBeca = async ({ codigo, nombre, modalidad, tope_mensual }) => {
+  if (!nombre || !modalidad) {
+    const err = new Error('nombre y modalidad son requeridos');
+    err.status = 400;
+    throw err;
+  }
+
+  const mod = String(modalidad).trim().toUpperCase();
+  if (!modalidadesPermitidas.includes(mod)) {
+    const err = new Error('modalidad inválida');
+    err.status = 400;
+    throw err;
+  }
+
+  const codFinal = codigo && codigo.trim() !== ''
+    ? codigo.trim()
+    : generarCodigoAutomatico(mod);
+
+  const [result] = await pool.query(
+    `INSERT INTO tipos_beca (codigo, nombre, modalidad, tope_mensual)
+     VALUES (?, ?, ?, ?)`,
+    [codFinal, nombre, mod, tope_mensual || null]
+  );
+
+  return {
+    id_tipo_beca: result.insertId,
+    codigo: codFinal,
+    nombre,
+    modalidad: mod,
+    tope_mensual: tope_mensual || null
+  };
+};
+
+exports.updateTipoBeca = async (idTipoBeca, { codigo, nombre, modalidad, tope_mensual }) => {
+  const [rows] = await pool.query(
+    'SELECT * FROM tipos_beca WHERE id_tipo_beca = ?',
+    [idTipoBeca]
+  );
+  if (rows.length === 0) {
+    const err = new Error('Tipo de beca no encontrado');
+    err.status = 404;
+    throw err;
+  }
+
+  const actual = rows[0];
+
+  const mod = modalidad
+    ? String(modalidad).trim().toUpperCase()
+    : actual.modalidad;
+
+  if (!modalidadesPermitidas.includes(mod)) {
+    const err = new Error('modalidad inválida');
+    err.status = 400;
+    throw err;
+  }
+
+  const codFinal = (codigo && codigo.trim() !== '') ? codigo.trim() : actual.codigo;
+  const nombreFinal = nombre || actual.nombre;
+  const topeFinal = (tope_mensual !== undefined) ? tope_mensual : actual.tope_mensual;
+
+  await pool.query(
+    `UPDATE tipos_beca
+     SET codigo = ?, nombre = ?, modalidad = ?, tope_mensual = ?
+     WHERE id_tipo_beca = ?`,
+    [codFinal, nombreFinal, mod, topeFinal, idTipoBeca]
+  );
+
+  return {
+    id_tipo_beca: Number(idTipoBeca),
+    codigo: codFinal,
+    nombre: nombreFinal,
+    modalidad: mod,
+    tope_mensual: topeFinal
+  };
+};
+
+exports.deleteTipoBeca = async (idTipoBeca) => {
+  const [becaRows] = await pool.query(
+    'SELECT COUNT(*) AS total FROM becas WHERE id_tipo_beca = ?',
+    [idTipoBeca]
+  );
+  if (becaRows[0].total > 0) {
+    const err = new Error('No se puede eliminar: el tipo de beca está en uso');
+    err.status = 400;
+    throw err;
+  }
+
+  await pool.query(
+    'DELETE FROM tipos_beca WHERE id_tipo_beca = ?',
+    [idTipoBeca]
+  );
+};
+
+function generarCodigoAutomatico(modalidad) {
+  const pref =
+    modalidad === 'SOCIOECONOMICA' ? 'SOC' :
+    modalidad === 'CULTURAL'       ? 'CUL' :
+    modalidad === 'ACADEMICA'      ? 'ACA' :
+    'DEP';
+  const suf = Date.now().toString().slice(-4);
+  return `${pref}-${suf}`;
+}
+
+//
+// ======================= ASIGNACIÓN DE BECA A SOLICITUD =======================
+//
 
 exports.assignTipoBecaToSolicitud = async (
   idSolicitud,
@@ -89,7 +138,6 @@ exports.assignTipoBecaToSolicitud = async (
   try {
     await conn.beginTransaction();
 
-    // Verificar que la solicitud exista
     const [solRows] = await conn.query(
       'SELECT id_solicitud FROM solicitudes WHERE id_solicitud = ?',
       [idSolicitud]
@@ -100,7 +148,6 @@ exports.assignTipoBecaToSolicitud = async (
       throw err;
     }
 
-    // Si no viene valor, usar el tope_mensual del tipo de beca como default
     let valorFinal = valor;
     if (!valorFinal) {
       const [tipoRows] = await conn.query(
@@ -115,12 +162,10 @@ exports.assignTipoBecaToSolicitud = async (
       valorFinal = tipoRows[0].tope_mensual || null;
     }
 
-    // Fechas: si no vienen, usamos hoy como inicio y NULL como fin
-    const hoy = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+    const hoy = new Date().toISOString().slice(0, 10);
     const fechaInicioFinal = fecha_inicio || hoy;
     const fechaFinFinal = fecha_fin || null;
 
-    // ¿Ya hay una beca para esta solicitud?
     const [becaRows] = await conn.query(
       'SELECT id_beca FROM becas WHERE id_solicitud = ?',
       [idSolicitud]
@@ -128,7 +173,6 @@ exports.assignTipoBecaToSolicitud = async (
 
     let message;
     if (becaRows.length > 0) {
-      // UPDATE
       const idBeca = becaRows[0].id_beca;
       await conn.query(
         `UPDATE becas
@@ -138,7 +182,6 @@ exports.assignTipoBecaToSolicitud = async (
       );
       message = 'Tipo de beca actualizado para la solicitud.';
     } else {
-      // INSERT nueva beca
       await conn.query(
         `INSERT INTO becas (
             id_solicitud,
@@ -169,7 +212,11 @@ exports.assignTipoBecaToSolicitud = async (
     conn.release();
   }
 };
-const { pool } = require('../config/database');
+
+//
+// ======================= CONVOCATORIAS =======================
+//
+
 exports.listConvocatorias = async () => {
   const [rows] = await pool.query(
     `SELECT c.id_convocatoria,
@@ -199,7 +246,6 @@ exports.cambiarEstadoConvocatoria = async (
   try {
     await conn.beginTransaction();
 
-    // Verificar que exista la convocatoria
     const [rows] = await conn.query(
       'SELECT * FROM convocatorias WHERE id_convocatoria = ?',
       [idConvocatoria]
@@ -212,8 +258,6 @@ exports.cambiarEstadoConvocatoria = async (
     }
 
     const conv = rows[0];
-
-    // Fecha actual en formato YYYY-MM-DD
     const hoy = new Date().toISOString().slice(0, 10);
 
     let fechaInicio = conv.fecha_inicio;
@@ -252,9 +296,11 @@ exports.cambiarEstadoConvocatoria = async (
     conn.release();
   }
 };
-const { pool } = require('../config/database');
 
-//  Activaciones o cierres de etapas
+//
+// ======================= ESTADOS DE SOLICITUD =======================
+//
+
 exports.actualizarEstadoSolicitud = async (idSolicitud, nuevoEstado, { responsable, observaciones }) => {
   const estadosPermitidos = [
     'CREADA',
@@ -310,10 +356,11 @@ exports.actualizarEstadoSolicitud = async (idSolicitud, nuevoEstado, { responsab
     conn.release();
   }
 };
-// publicación de la noticia (anuncios)
-const { pool } = require('../config/database');
 
-//  Anuncios
+//
+// ======================= ANUNCIOS =======================
+//
+
 exports.listAnuncios = async () => {
   const [rows] = await pool.query(
     `SELECT a.id_anuncio,
@@ -377,9 +424,11 @@ exports.deleteAnuncio = async (idAnuncio) => {
     [idAnuncio]
   );
 };
-const { pool } = require('../config/database');
 
-//  Consultas
+//
+// ======================= CONSULTAS =======================
+//
+
 exports.listConsultas = async () => {
   const [rows] = await pool.query(
     `SELECT c.id_consulta,
@@ -486,9 +535,11 @@ exports.responderConsulta = async (idConsulta, respuesta, idFuncionario) => {
     conn.release();
   }
 };
-const { pool } = require('../config/database');
 
-// g) Chatbot
+//
+// ======================= CHATBOT =======================
+//
+
 exports.listChatbotRespuestas = async () => {
   const [rows] = await pool.query(
     `SELECT id_respuesta, pregunta, respuesta, fecha_creacion
@@ -536,9 +587,11 @@ exports.deleteChatbotRespuesta = async (idRespuesta) => {
     [idRespuesta]
   );
 };
-const { pool } = require('../config/database');
 
-// i) Aprobación de beca
+//
+// ======================= APROBACIÓN / DENEGACIÓN DE SOLICITUD =======================
+//
+
 exports.aprobarSolicitud = async (idSolicitud, { motivo, id_sesion, evaluador }) => {
   const conn = await pool.getConnection();
   try {
@@ -599,7 +652,6 @@ exports.aprobarSolicitud = async (idSolicitud, { motivo, id_sesion, evaluador })
   }
 };
 
-//  Denegación de beca
 exports.denegarSolicitud = async (idSolicitud, { motivo, id_sesion, evaluador }) => {
   const conn = await pool.getConnection();
   try {
@@ -652,9 +704,11 @@ exports.denegarSolicitud = async (idSolicitud, { motivo, id_sesion, evaluador })
     conn.release();
   }
 };
-const { pool } = require('../config/database');
 
-//  Verificación de documentos
+//
+// ======================= VERIFICACIÓN DE DOCUMENTOS =======================
+//
+
 exports.listDocumentosSolicitud = async (idSolicitud) => {
   const [rows] = await pool.query(
     `SELECT sd.id_solicitud_doc,
@@ -687,7 +741,6 @@ exports.verificarDocumento = async (idSolicitud, idDocumento, validoRaw) => {
   try {
     await conn.beginTransaction();
 
-    // Verificar que exista la solicitud
     const [sol] = await conn.query(
       'SELECT id_solicitud FROM solicitudes WHERE id_solicitud = ?',
       [idSolicitud]
@@ -698,7 +751,6 @@ exports.verificarDocumento = async (idSolicitud, idDocumento, validoRaw) => {
       throw err;
     }
 
-    // Buscar el registro solicitud_docs
     const [sdRows] = await conn.query(
       `SELECT id_solicitud_doc
        FROM solicitud_docs
@@ -718,7 +770,6 @@ exports.verificarDocumento = async (idSolicitud, idDocumento, validoRaw) => {
       [valido, idSolicitudDoc]
     );
 
-    // Devolver estado actualizado
     const [detalle] = await conn.query(
       `SELECT sd.id_solicitud_doc,
               sd.id_solicitud,
@@ -747,123 +798,11 @@ exports.verificarDocumento = async (idSolicitud, idDocumento, validoRaw) => {
     conn.release();
   }
 };
-const { pool } = require('../config/database');
 
-// Tipos de beca
-const modalidadesPermitidas = [
-  'SOCIOECONOMICA',
-  'CULTURAL',
-  'ACADEMICA',
-  'DEPORTIVA'
-];
+//
+// ======================= VISITAS DOMICILIARIAS =======================
+//
 
-exports.createTipoBeca = async ({ codigo, nombre, modalidad, tope_mensual }) => {
-  if (!nombre || !modalidad) {
-    const err = new Error('nombre y modalidad son requeridos');
-    err.status = 400;
-    throw err;
-  }
-
-  const mod = String(modalidad).trim().toUpperCase();
-  if (!modalidadesPermitidas.includes(mod)) {
-    const err = new Error('modalidad inválida');
-    err.status = 400;
-    throw err;
-  }
-
-  const codFinal = codigo && codigo.trim() !== ''
-    ? codigo.trim()
-    : generarCodigoAutomatico(mod); // opcional, ver función abajo
-
-  const [result] = await pool.query(
-    `INSERT INTO tipos_beca (codigo, nombre, modalidad, tope_mensual)
-     VALUES (?, ?, ?, ?)`,
-    [codFinal, nombre, mod, tope_mensual || null]
-  );
-
-  return {
-    id_tipo_beca: result.insertId,
-    codigo: codFinal,
-    nombre,
-    modalidad: mod,
-    tope_mensual: tope_mensual || null
-  };
-};
-
-exports.updateTipoBeca = async (idTipoBeca, { codigo, nombre, modalidad, tope_mensual }) => {
-  const [rows] = await pool.query(
-    'SELECT * FROM tipos_beca WHERE id_tipo_beca = ?',
-    [idTipoBeca]
-  );
-  if (rows.length === 0) {
-    const err = new Error('Tipo de beca no encontrado');
-    err.status = 404;
-    throw err;
-  }
-
-  const actual = rows[0];
-
-  const mod = modalidad
-    ? String(modalidad).trim().toUpperCase()
-    : actual.modalidad;
-
-  if (!modalidadesPermitidas.includes(mod)) {
-    const err = new Error('modalidad inválida');
-    err.status = 400;
-    throw err;
-  }
-
-  const codFinal = (codigo && codigo.trim() !== '') ? codigo.trim() : actual.codigo;
-  const nombreFinal = nombre || actual.nombre;
-  const topeFinal = (tope_mensual !== undefined) ? tope_mensual : actual.tope_mensual;
-
-  await pool.query(
-    `UPDATE tipos_beca
-     SET codigo = ?, nombre = ?, modalidad = ?, tope_mensual = ?
-     WHERE id_tipo_beca = ?`,
-    [codFinal, nombreFinal, mod, topeFinal, idTipoBeca]
-  );
-
-  return {
-    id_tipo_beca: Number(idTipoBeca),
-    codigo: codFinal,
-    nombre: nombreFinal,
-    modalidad: mod,
-    tope_mensual: topeFinal
-  };
-};
-
-exports.deleteTipoBeca = async (idTipoBeca) => {
-  // opcional: validar que no esté en uso en becas
-  const [becaRows] = await pool.query(
-    'SELECT COUNT(*) AS total FROM becas WHERE id_tipo_beca = ?',
-    [idTipoBeca]
-  );
-  if (becaRows[0].total > 0) {
-    const err = new Error('No se puede eliminar: el tipo de beca está en uso');
-    err.status = 400;
-    throw err;
-  }
-
-  await pool.query(
-    'DELETE FROM tipos_beca WHERE id_tipo_beca = ?',
-    [idTipoBeca]
-  );
-};
-
-// helper simple
-function generarCodigoAutomatico(modalidad) {
-  const pref =
-    modalidad === 'SOCIOECONOMICA' ? 'SOC' :
-    modalidad === 'CULTURAL'       ? 'CUL' :
-    modalidad === 'ACADEMICA'      ? 'ACA' :
-    'DEP';
-  const suf = Date.now().toString().slice(-4);
-  return `${pref}-${suf}`;
-}
-const { pool } = require('../config/database');
-
-// Obtener última visita
 exports.getVisitaDomiciliaria = async (idSolicitud) => {
   const [rows] = await pool.query(
     `SELECT *
@@ -876,7 +815,6 @@ exports.getVisitaDomiciliaria = async (idSolicitud) => {
   return rows[0] || null;
 };
 
-// Programar visita
 exports.programarVisitaDomiciliaria = async (idSolicitud, { fecha_programada, observaciones }) => {
   const [sol] = await pool.query(
     'SELECT id_solicitud FROM solicitudes WHERE id_solicitud = ?',
@@ -905,12 +843,10 @@ exports.programarVisitaDomiciliaria = async (idSolicitud, { fecha_programada, ob
   };
 };
 
-// Actualizar visita
 exports.actualizarVisitaDomiciliaria = async (
   idSolicitud,
   { fecha_programada, fecha_realizada, estado, observaciones, resultado }
 ) => {
-
   const estadosPermitidos = ['PENDIENTE', 'REALIZADA', 'CANCELADA'];
 
   if (estado && !estadosPermitidos.includes(estado.toUpperCase())) {
@@ -964,9 +900,11 @@ exports.actualizarVisitaDomiciliaria = async (
     resultado: resultado || actual.resultado
   };
 };
-const { pool } = require('../config/database');
 
-//  Informes estadísticos
+//
+// ======================= INFORMES =======================
+//
+
 exports.informeEstadistico = async () => {
   const [resumen] = await pool.query(
     `SELECT
@@ -993,7 +931,7 @@ exports.informeEstadistico = async () => {
     por_modalidad: porModalidad
   };
 };
-//  Informes detallados
+
 exports.informeDetallado = async ({ tipo, periodo }) => {
   const t = (tipo || '').toLowerCase();
 
@@ -1068,7 +1006,11 @@ exports.informeDetallado = async ({ tipo, periodo }) => {
     }
   }
 };
-// Apelaciones
+
+//
+// ======================= APELACIONES =======================
+//
+
 exports.listApelaciones = async () => {
   const [rows] = await pool.query(
     `SELECT a.*, s.estado AS estado_solicitud
@@ -1174,7 +1116,11 @@ exports.resolverApelacion = async (idApelacion, { estado, resolucion }) => {
     conn.release();
   }
 };
-//  Suspensión de becas
+
+//
+// ======================= SUSPENSIÓN / REANUDACIÓN DE BECAS =======================
+//
+
 exports.suspenderBeca = async (idBeca, { motivo, fecha_fin }) => {
   const conn = await pool.getConnection();
   try {
@@ -1262,7 +1208,10 @@ exports.reanudarBeca = async (idBeca) => {
   }
 };
 
-// Cierre de expedientes
+//
+// ======================= CIERRE DE EXPEDIENTE =======================
+//
+
 exports.cerrarExpediente = async (idSolicitud, { responsable, observaciones }) => {
   const conn = await pool.getConnection();
   try {
@@ -1293,6 +1242,7 @@ exports.cerrarExpediente = async (idSolicitud, { responsable, observaciones }) =
     await conn.query(
       `INSERT INTO revisiones_admin (id_solicitud, responsable, fecha, observaciones)
        VALUES (?, ?, DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s'), ?)`,
+
       [idSolicitud, responsable, observaciones || 'Cierre de expediente']
     );
 
