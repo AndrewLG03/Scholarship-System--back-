@@ -1,4 +1,3 @@
-
 import { pool } from "../config/database.js";
 
 // Obtener solicitudes pendientes
