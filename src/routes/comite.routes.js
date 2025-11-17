@@ -1,18 +1,16 @@
-import { Router } from "express";
-import { verifyToken } from "../middleware/authMiddleware.js";
+const express = require("express");
+const router = express.Router();
 
+const { verifyToken } = require("../middleware/authMiddleware");
 const { onlyCommittee } = require("../middleware/roleMiddleware");
-import {
+
+const {
   getSolicitudesPendientes,
   getExpediente,
   aprobarSolicitud,
   denegarSolicitud,
   generarInforme
-} from "../controllers/comiteController.js";
-
-const router = Router();
-
-
+} = require("../controllers/comiteController.js");
 
 // Rutas protegidas SOLO para comité
 router.get("/pendientes", verifyToken, onlyCommittee, getSolicitudesPendientes);
@@ -21,5 +19,4 @@ router.put("/aprobar/:id", verifyToken, onlyCommittee, aprobarSolicitud);
 router.put("/denegar/:id", verifyToken, onlyCommittee, denegarSolicitud);
 router.get("/informe", verifyToken, onlyCommittee, generarInforme);
 
-
-export default router;
+module.exports = router;
