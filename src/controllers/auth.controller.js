@@ -1,43 +1,64 @@
-// src/controllers/auth.controller.js
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { getPool } = require('../config/database');
 
-exports.register = async (req, res, next) => {
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const pool = require("../config/database");
+
+// REGISTRO
+async function register(req, res) {
     try {
         const { email, password, name } = req.body;
-        if (!email || !password) return res.status(400).json({ message: 'Email y password requeridos' });
+
+        if (!email || !password) {
+            return res.status(400).json({ message: "Email y password requeridos" });
+        }
 
         const hashed = await bcrypt.hash(password, 10);
-        const pool = await getPool();
-        await pool.request()
-        .input('email', email)
-        .input('password', hashed)
-        .input('name', name || null)
-        .query('INSERT INTO Users (email,password,name) VALUES (@email,@password,@name)');
 
-        res.status(201).json({ message: 'Usuario creado' });
-    } catch (err) {
-        next(err);
+        await pool.query(
+            `INSERT INTO users (email, password, name, role) VALUES (?, ?, ?, 'aspirante')`,
+            [email, hashed, name]
+        );
+
+        res.status(201).json({ message: "Usuario registrado" });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Error registrando usuario" });
     }
-};
+}
 
-exports.login = async (req, res, next) => {
+// LOGIN
+async function login(req, res) {
     try {
         const { email, password } = req.body;
-        const pool = await getPool();
-        const result = await pool.request()
-        .input('email', email)
-        .query('SELECT id, password FROM Users WHERE email = @email');
-        const user = result.recordset[0];
-        if (!user) return res.status(401).json({ message: 'Credenciales inválidas' });
 
+        const [rows] = await pool.query(
+            `SELECT id, password, role FROM users WHERE email = ?`,
+            [email]
+        );
+
+        if (!rows.length) {
+            return res.status(401).json({ message: "Credenciales inválidas" });
+        }
+
+        const user = rows[0];
         const match = await bcrypt.compare(password, user.password);
-        if (!match) return res.status(401).json({ message: 'Credenciales inválidas' });
 
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'secret', { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
-        res.json({ token });
-    } catch (err) {
-        next(err);
+        if (!match) {
+            return res.status(401).json({ message: "Credenciales inválidas" });
+        }
+
+        const token = jwt.sign(
+            { id: user.id, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+
+        res.json({ token, role: user.role });
+
+    } catch (error) {
+        res.status(500).json({ message: "Error iniciando sesión" });
     }
-};
+}
+
+module.exports = { register, login };
