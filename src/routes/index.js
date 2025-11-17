@@ -1,17 +1,16 @@
-// src/routes/index.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const authRoutes = require('./auth.routes');
-const comiteRoutes = require('./comite.routes');
+const authRoutes = require("./auth.routes");
+const comiteRoutes = require("./comite.routes");
 
-// más rutas: aspirantes, becados, admin... se agregan aquí
+// Rutas principales
+router.use("/auth", authRoutes);
+router.use("/comite", comiteRoutes);
 
-router.use('/auth', authRoutes);
-router.use('/comite', comiteRoutes);
-
-
-// health
-router.get('/health', (req, res) => res.json({ status: 'ok' }));
+// Health check
+router.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 
 module.exports = router;
