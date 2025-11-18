@@ -1,9 +1,8 @@
-// src/config/database.js
 const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({
     host: "tiusr36pl.cuc-carrera-ti.ac.cr",
-    user: "ProyectoDB",
+    user: "ProyectoDB", 
     password: "Proyecto_SQL",
     database: "BecasDB",
     port: 3306,
@@ -12,4 +11,15 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-module.exports = { pool };
+// Probar conexión
+pool.getConnection()
+  .then(connection => {
+    console.log('✅ Conectado a la base de datos MySQL - BecasDB');
+    connection.release();
+  })
+  .catch(error => {
+    console.error('❌ Error conectando a la base de datos:', error.message);
+  });
+
+// Exporta directamente el pool
+module.exports = pool;

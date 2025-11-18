@@ -1,16 +1,16 @@
-// src/server.js
+// src/server.js 
 require('dotenv').config();
 const app = require('./app');
-const { pool } = require('./config/database'); // 👈 usamos pool, no getPool
+const db = require('./config/database'); // ← IMPORTACIÓN DIRECTA
 
 const PORT = process.env.PORT || 3000;
 
 (async () => {
   try {
     // Probar conexión a la base de datos
-    const conn = await pool.getConnection();
-    await conn.ping();       // opcional, solo para verificar
-    conn.release();          // liberamos la conexión
+    const conn = await db.getConnection(); // ← db en lugar de pool
+    console.log('✅ Conectado a la base de datos MySQL');
+    conn.release(); // liberamos la conexión
 
     app.listen(PORT, () => {
       console.log(`Server escuchando en puerto ${PORT}`);

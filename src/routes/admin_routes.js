@@ -72,4 +72,14 @@ router.put('/becas/:id/reanudar', tsController.reanudarBeca);
 // CIERRE DE EXPEDIENTES 
 router.put('/expedientes/:id/cerrar', tsController.cerrarExpediente);
 
+
+// ======================= SOLICITUDES =======================
+router.get('/solicitudes', tsController.listSolicitudes);
+
+// ======================= ANÁLISIS SOCIOECONÓMICO =======================
+router.get('/socioeconomico/casos', tsController.listCasosSocioeconomicos);
+
+// ======================= EVALUACIÓN ACADÉMICA =======================
+router.get('/academico/estudiantes', tsController.listEvaluacionAcademica);
+
 module.exports = router;
