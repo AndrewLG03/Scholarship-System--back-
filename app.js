@@ -1,4 +1,4 @@
-// app.js - Express configuration (CommonJS)
+// backend/app.js - Express configuration (CommonJS)
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
