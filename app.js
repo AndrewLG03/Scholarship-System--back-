@@ -3,7 +3,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
+const { rateLimit } = require('express-rate-limit'); // 👈 CORREGIDO
 require('dotenv').config();
 
 const routes = require('./src/routes'); // src/routes/index.js
@@ -18,8 +18,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
 const limiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 200
+  windowMs: 60 * 1000, // 1 minuto
+  max: 200,
 });
 app.use(limiter);
 
