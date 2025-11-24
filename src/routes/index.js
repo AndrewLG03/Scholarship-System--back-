@@ -1,27 +1,38 @@
 // backend/src/routes/index.js
 const express = require('express');
-const authRoutes = require('./auth.routes');
-const adminRoutes = require('./admin_routes'); 
-
 const router = express.Router();
 
+// Importar rutas
 const authRoutes = require('./auth.routes');
 const studentRoutes = require('./student.routes');
 const adminRoutes = require('./admin.routes');
+const solicitudRoutes = require('./solicitud.routes');
+const apelacionRoutes = require("./apelacion.routes");
+const resultadoRoutes = require("./resultado.routes");
 
-// Ruta de autenticación
+console.log('🔍 [DEBUG] Resultado Routes loaded:', typeof resultadoRoutes);
+
+// Auth → /auth/*
 router.use('/auth', authRoutes);
 
-// Rutas de estudiantes, aspirantes, solicitudes, etc. se montan en la raíz de /api
+// Estudiantes / aspirantes → /api/*
 router.use('/', studentRoutes);
 
-// Rutas de administración (panel)
+// Panel admin → /admin/*
 router.use('/admin', adminRoutes);
 
-// Endpoint de salud
-router.get('/health', (req, res) => res.json({ status: 'ok' }));
-router.use('/auth', authRoutes);
-router.use('/admin', adminRoutes);
+router.use('/solicitudes', solicitudRoutes);
+
+router.use("/apelaciones", apelacionRoutes);
+
+console.log('🔍 [DEBUG] Montando /resultados/aspirante con resultadoRoutes');
+router.use("/resultados/aspirante", resultadoRoutes);
+
+// Health check
+router.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
 
 module.exports = router;
+
 
