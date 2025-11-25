@@ -42,8 +42,6 @@ router.delete('/tipos-beca/:id', adminController.deleteTipoBeca);
 router.get('/solicitudes', adminController.listSolicitudes);
 router.get('/solicitudes/:id', adminController.getSolicitud);
 router.put('/solicitudes/:id/estado', adminController.updateSolicitudEstado);
-router.post('/solicitudes', adminController.createSolicitud);
-
 
 /* =====================================================
    INFO SOCIOECONÓMICA
@@ -54,10 +52,5 @@ router.get('/socioeconomico/casos', adminController.listCasosSocioeconomicos);
    EVALUACIÓN ACADÉMICA
 ===================================================== */
 router.get('/academico/estudiantes', adminController.listEvaluacionAcademica);
-/* =====================================================
-   ETAPAS DE CONVOCATORIA
-===================================================== */
-router.get('/etapas', adminController.listEtapas);
-router.put('/etapas/:id', adminController.updateEtapa);
 
 module.exports = router;

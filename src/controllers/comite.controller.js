@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // backend/src/controllers/comite.controller.js
 const { pool } = require("../config/database");
 
@@ -83,83 +84,151 @@ async function getSolicitudesPendientes(req, res) {
     `);
 
     res.json(rows);
+=======
+const { pool } = require("../config/database");
+
+// Solicitudes pendientes
+async function getSolicitudesPendientes(req, res) {
+  try {
+    const [rows] = await pool.query(`
+      SELECT id, nombre, fecha, estado
+      FROM solicitudes
+      WHERE estado = 'pendiente'
+    `);
+
+    res.json(rows);
+
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
   } catch (error) {
     console.error("ERROR:", error);
     res.status(500).json({ message: "Error obteniendo solicitudes" });
   }
 }
 
+<<<<<<< HEAD
 // Obtener expediente de un estudiante + documentos asociados
+=======
+// Expediente
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
 async function getExpediente(req, res) {
   try {
     const { id } = req.params;
 
+<<<<<<< HEAD
     // Datos del estudiante
     const [[estudiante]] = await pool.query(
       `
       SELECT nombre, carrera, promedio
       FROM estudiantes
       WHERE id_estudiante = ?
+=======
+    const [[estudiante]] = await pool.query(
+      `
+      SELECT nombre, carrera, promedio, ingreso
+      FROM estudiantes
+      WHERE id = ?
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
       `,
       [id]
     );
 
+<<<<<<< HEAD
     // Archivos de la solicitud
     const [documentos] = await pool.query(
       `
       SELECT url_archivo AS archivo
       FROM solicitud_docs
       WHERE id_solicitud = ?
+=======
+    const [documentos] = await pool.query(
+      `
+      SELECT archivo
+      FROM documentos
+      WHERE estudiante_id = ?
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
       `,
       [id]
     );
 
     res.json({
       ...estudiante,
+<<<<<<< HEAD
       documentos: documentos.map(doc => doc.archivo)
     });
 
+=======
+      documentos: documentos.map((d) => d.archivo),
+    });
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
   } catch (error) {
     console.error("Error en getExpediente:", error);
     res.status(500).json({ message: "Error obteniendo expediente" });
   }
 }
 
+<<<<<<< HEAD
 // Aprobar solicitud
+=======
+// Aprobar
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
 async function aprobarSolicitud(req, res) {
   try {
     const { id } = req.params;
 
     await pool.query(
+<<<<<<< HEAD
       `UPDATE solicitudes SET estado = 'APROBADA' WHERE id_solicitud = ?`,
       [id]
     );
 
     res.json({ message: "Solicitud aprobada correctamente" });
+=======
+      `UPDATE solicitudes SET estado = 'aprobada' WHERE id = ?`,
+      [id]
+    );
+
+    res.json({ message: "Solicitud aprobada" });
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
   } catch (error) {
     console.error("Error en aprobarSolicitud:", error);
     res.status(500).json({ message: "Error aprobando solicitud" });
   }
 }
 
+<<<<<<< HEAD
 // Denegar solicitud
+=======
+// Denegar
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
 async function denegarSolicitud(req, res) {
   try {
     const { id } = req.params;
 
     await pool.query(
+<<<<<<< HEAD
       `UPDATE solicitudes SET estado = 'NO APROBADA' WHERE id_solicitud = ?`,
       [id]
     );
 
     res.json({ message: "Solicitud denegada correctamente" });
+=======
+      `UPDATE solicitudes SET estado = 'denegada' WHERE id = ?`,
+      [id]
+    );
+
+    res.json({ message: "Solicitud denegada" });
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
   } catch (error) {
     console.error("Error en denegarSolicitud:", error);
     res.status(500).json({ message: "Error denegando solicitud" });
   }
 }
 
+<<<<<<< HEAD
 // Informe completo de solicitudes
+=======
+// Informe
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
 async function generarInforme(req, res) {
   try {
     const [rows] = await pool.query(`SELECT * FROM solicitudes`);
@@ -170,6 +239,7 @@ async function generarInforme(req, res) {
   }
 }
 
+<<<<<<< HEAD
 // =====================================================
 // EXPORTACIÓN DE FUNCIONES
 // =====================================================
@@ -180,9 +250,16 @@ module.exports = {
   listarSesiones,
 
   // Solicitudes
+=======
+module.exports = {
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
   getSolicitudesPendientes,
   getExpediente,
   aprobarSolicitud,
   denegarSolicitud,
+<<<<<<< HEAD
   generarInforme
+=======
+  generarInforme,
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
 };

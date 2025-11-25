@@ -90,9 +90,25 @@ exports.obtenerDocumentos = async (req, res) => {
     const idSolicitud = req.params.id;
 
     const [docs] = await connection.query(
+<<<<<<< HEAD
       `SELECT id_solicitud_doc, id_documento, url_archivo, valido
        FROM solicitud_docs
        WHERE id_solicitud = ?`,
+=======
+      `SELECT 
+          d.id_documento,
+          d.codigo,
+          d.nombre,
+          d.obligatorio,
+          sd.id_solicitud_doc,
+          sd.url_archivo,
+          sd.valido
+       FROM documentos d
+       LEFT JOIN solicitud_docs sd
+         ON sd.id_documento = d.id_documento
+        AND sd.id_solicitud = ?
+       ORDER BY d.id_documento`,
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
       [idSolicitud]
     );
 
@@ -105,3 +121,49 @@ exports.obtenerDocumentos = async (req, res) => {
     connection.release();
   }
 };
+<<<<<<< HEAD
+=======
+
+exports.eliminarDocumento = async (req, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const { idSolicitud, idDoc } = req.params;
+
+    // Verificar si existe
+    const [rows] = await connection.query(
+      `SELECT * FROM solicitud_docs 
+       WHERE id_solicitud = ? AND id_documento = ?`,
+      [idSolicitud, idDoc]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        msg: "El documento no existe o no pertenece a esta solicitud"
+      });
+    }
+
+    // Eliminar registro
+    await connection.query(
+      `DELETE FROM solicitud_docs 
+       WHERE id_solicitud = ? AND id_documento = ?`,
+      [idSolicitud, idDoc]
+    );
+
+    return res.json({
+      ok: true,
+      msg: "Documento eliminado correctamente"
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      ok: false,
+      msg: "Error al eliminar documento"
+    });
+  } finally {
+    connection.release();
+  }
+};
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77

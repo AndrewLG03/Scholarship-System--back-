@@ -50,8 +50,8 @@ app.get('/', (req, res) => res.json({ ok: true, message: 'API - backend (Express
 // DEBUG PARA RUTAS NO ENCONTRADAS - CORREGIDO
 // ===============================
 app.use((req, res, next) => {
-  console.log('🔍 [DEBUG 404] Ruta NO encontrada:', req.method, req.originalUrl);
-  console.log('🔍 [DEBUG 404] Esta ruta no coincide con ningún patrón definido');
+  console.log(' [DEBUG 404] Ruta NO encontrada:', req.method, req.originalUrl);
+  console.log(' [DEBUG 404] Esta ruta no coincide con ningún patrón definido');
   next(); // Esto pasará al errorHandler que enviará el 404
 });
 

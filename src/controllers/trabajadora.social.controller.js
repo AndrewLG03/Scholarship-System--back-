@@ -174,6 +174,7 @@ exports.updateSolicitudEstado = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+<<<<<<< HEAD
 exports.createSolicitud = async (req, res) => {
   try {
     const nueva = await service.createSolicitud(req.body);
@@ -182,6 +183,8 @@ exports.createSolicitud = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+=======
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
 
 /* ============================================
    SOCIOECONÓMICO
@@ -206,6 +209,7 @@ exports.listEvaluacionAcademica = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+<<<<<<< HEAD
 /* ============================================
    ETAPAS DE CONVOCATORIA
 ============================================ */
@@ -226,3 +230,5 @@ exports.updateEtapa = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+=======
+>>>>>>> 55fd35a4906540faf3aab4b4a3a4b9a73372fd77
