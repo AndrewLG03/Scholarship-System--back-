@@ -45,3 +45,63 @@ exports.guardarSolicitudCompleta = async (req, res) => {
     connection.release();
   }
 };
+//subir documento complementario
+exports.subirDocumento = async (req, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const idSolicitud = req.params.id;
+    const archivo = req.file;
+    const { id_documento } = req.body;
+
+    if (!archivo) {
+      return res.status(400).json({ ok: false, msg: 'No se envió ningún archivo' });
+    }
+
+    if (!id_documento) {
+      return res.status(400).json({ ok: false, msg: 'Debe indicar id_documento' });
+    }
+
+    await connection.query(
+      `INSERT INTO solicitud_docs (id_solicitud, id_documento, url_archivo, valido)
+       VALUES (?, ?, ?, 'SI')`,
+      [idSolicitud, id_documento, archivo.filename]
+    );
+
+    res.json({
+      ok: true,
+      msg: 'Documento cargado correctamente',
+      archivo: archivo.filename
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, msg: 'Error al subir documento' });
+  } finally {
+    connection.release();
+  }
+};
+
+//obtener documentos
+exports.obtenerDocumentos = async (req, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const idSolicitud = req.params.id;
+
+    const [docs] = await connection.query(
+      `SELECT id_solicitud_doc, id_documento, url_archivo, valido
+       FROM solicitud_docs
+       WHERE id_solicitud = ?`,
+      [idSolicitud]
+    );
+
+    res.json({ ok: true, documentos: docs });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, msg: 'Error al obtener documentos' });
+  } finally {
+    connection.release();
+  }
+};
