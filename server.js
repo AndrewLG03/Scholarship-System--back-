@@ -1,4 +1,4 @@
-// server.js - entry point
+// backend/server.js - entry point
 require('dotenv').config();
 const app = require('./app');
 const { pool } = require('./src/config/database');
