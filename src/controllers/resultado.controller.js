@@ -1,7 +1,11 @@
-const db = require("../config/database");
+const db = require("../config/database"); 
 
-exports.getResultadosByAspirante = (req, res) => {
-    const { id_aspirante } = req.params;
+exports.obtenerResultados = async (req, res) => {
+
+    console.log('🔍 [DEBUG] obtenerResultados called');
+    console.log('🔍 [DEBUG] req.params:', req.params);
+
+    const { id } = req.params;
 
     const sql = `
         SELECT 
@@ -28,16 +32,11 @@ exports.getResultadosByAspirante = (req, res) => {
         LEFT JOIN resoluciones r ON r.id_solicitud = s.id_solicitud
         LEFT JOIN becas b ON b.id_solicitud = s.id_solicitud
         LEFT JOIN tipos_beca t ON t.id_tipo_beca = b.id_tipo_beca
-        WHERE s.id_aspirante = ?;
+        WHERE s.id_aspirante = ? ;
     `;
 
-    db.query(sql, [id_aspirante], (err, results) => {
-        if (err) {
-            console.error("Error obteniendo resultados:", err);
-            return res.status(500).json({ 
-                error: "Error al obtener los resultados del aspirante" 
-            });
-        }
+    try {
+        const [results] = await db.pool.query(sql, [id]);
 
         if (results.length === 0) {
             return res.status(404).json({
@@ -46,9 +45,14 @@ exports.getResultadosByAspirante = (req, res) => {
         }
 
         res.json({
-            aspirante: id_aspirante,
+            aspirante: id,
             total_registros: results.length,
             resultados: results
         });
-    });
-};  
+    } catch (err) {
+        console.error("Error obteniendo resultados:", err);
+        return res.status(500).json({ 
+            error: "Error al obtener los resultados del aspirante" 
+        });
+    }
+};

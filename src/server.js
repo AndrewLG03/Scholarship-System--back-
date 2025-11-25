@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 (async () => {
   try {
     // Probar conexión a la base de datos
-    const conn = await db.getConnection(); // ← db en lugar de pool
+    const conn = await db.pool.getConnection(); // ← db.pool en lugar de db
     console.log('✅ Conectado a la base de datos MySQL');
     conn.release(); // liberamos la conexión
 
