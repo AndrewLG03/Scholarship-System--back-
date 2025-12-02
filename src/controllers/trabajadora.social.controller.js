@@ -1,548 +1,298 @@
-const tsService = require('../services/trabajadora.social.service');
+const service = require('../services/trabajadora.social.service');
 
-// =====================================================
-//  SOLICITUDES - CORREGIDO
-// =====================================================
-
-exports.listSolicitudes = async (req, res, next) => {
+/* ============================================
+   PERIODOS
+============================================ */
+exports.listPeriodos = async (req, res) => {
   try {
-    const { estado, fecha } = req.query || {};
-    const solicitudes = await tsService.listSolicitudes({ estado, fecha });
-    res.json(solicitudes);
-  } catch (error) {
-    console.error('Error listando solicitudes:', error);
-    res.status(500).json({
-      error: error.message || 'Error interno del servidor'
-    });
-  }
-};
-
-// =====================================================
-//  ANÁLISIS SOCIOECONÓMICO - CORREGIDO
-// =====================================================
-
-exports.listCasosSocioeconomicos = async (req, res, next) => {
-  try {
-    const casos = await tsService.listCasosSocioeconomicos();
-    res.json(casos);
-  } catch (error) {
-    console.error('Error listando casos socioeconómicos:', error);
-    res.status(500).json({
-      error: error.message || 'Error interno del servidor'
-    });
-  }
-};
-
-// =====================================================
-//  EVALUACIÓN ACADÉMICA - CORREGIDO
-// =====================================================
-
-exports.listEvaluacionAcademica = async (req, res, next) => {
-  try {
-    const { cuatri } = req.query || {};
-    const estudiantes = await tsService.listEvaluacionAcademica(cuatri);
-    res.json(estudiantes);
-  } catch (error) {
-    console.error('Error listando evaluación académica:', error);
-    res.status(500).json({
-      error: error.message || 'Error interno del servidor'
-    });
-  }
-};
-
-// =====================================================
-//  APROBACIÓN / DENEGACIÓN DE SOLICITUDES - CORREGIDO
-// =====================================================
-
-exports.aprobarSolicitud = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { motivo, id_sesion } = req.body;
-    const evaluador = req.user?.nombre || req.user?.correo || 'TRABAJADORA_SOCIAL';
-
-    const data = await tsService.aprobarSolicitud(id, {
-      motivo,
-      id_sesion,
-      evaluador,
-    });
-
+    const data = await service.listPeriodos();
     res.json(data);
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
-exports.denegarSolicitud = async (req, res, next) => {
+exports.getPeriodo = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { motivo, id_sesion } = req.body;
-    const evaluador = req.user?.nombre || req.user?.correo || 'TRABAJADORA_SOCIAL';
-
-    const data = await tsService.denegarSolicitud(id, {
-      motivo,
-      id_sesion,
-      evaluador,
-    });
-
+    const data = await service.getPeriodo(req.params.id);
     res.json(data);
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
-// =====================================================
-//  APELACIONES - CORREGIDO
-// =====================================================
-
-exports.listApelaciones = async (req, res, next) => {
+exports.createPeriodo = async (req, res) => {
   try {
-    const data = await tsService.listApelaciones();
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.getApelacion = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const data = await tsService.getApelacion(id);
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.crearApelacion = async (req, res, next) => {
-  try {
-    const { id_solicitud, motivo } = req.body;
-    const data = await tsService.crearApelacion({ id_solicitud, motivo });
-    res.status(201).json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.resolverApelacion = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { estado, resolucion } = req.body;
-    const data = await tsService.resolverApelacion(id, { estado, resolucion });
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// =====================================================
-//  SUSPENSIÓN / REANUDACIÓN DE BECAS - CORREGIDO
-// =====================================================
-
-exports.suspenderBeca = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { motivo, fecha_fin } = req.body;
-    const data = await tsService.suspenderBeca(id, { motivo, fecha_fin });
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.reanudarBeca = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const data = await tsService.reanudarBeca(id);
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// =====================================================
-//  CIERRE DE EXPEDIENTES - CORREGIDO
-// =====================================================
-
-exports.cerrarExpediente = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { observaciones } = req.body;
-    const responsable = req.user?.nombre || req.user?.correo || 'TRABAJADORA_SOCIAL';
-
-    const data = await tsService.cerrarExpediente(id, { responsable, observaciones });
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// =====================================================
-//  TIPOS DE BECA - CORREGIDO
-// =====================================================
-
-exports.assignTipoBeca = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { id_tipo_beca, valor, fecha_inicio, fecha_fin } = req.body;
-    const idFuncionario = req.user?.id_usuario || null;
-
-    const result = await tsService.assignTipoBecaToSolicitud(
-      id,
-      id_tipo_beca,
-      { valor, fecha_inicio, fecha_fin },
-      idFuncionario
-    );
-
-    res.json(result);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// =====================================================
-//  ESTADO / ETAPAS DE SOLICITUD - CORREGIDO
-// =====================================================
-
-exports.actualizarEstadoSolicitud = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { estado, observaciones } = req.body;
-    const responsable = req.user?.nombre || req.user?.correo || 'TRABAJADORA_SOCIAL';
-
-    const result = await tsService.actualizarEstadoSolicitud(
-      id,
-      estado,
-      { responsable, observaciones }
-    );
-
-    res.json(result);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// =====================================================
-//  VERIFICACIÓN DE DOCUMENTOS - CORREGIDO
-// =====================================================
-
-exports.listDocumentosSolicitud = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const docs = await tsService.listDocumentosSolicitud(id);
-    res.json(docs);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.verificarDocumento = async (req, res, next) => {
-  try {
-    const { id, docId } = req.params;
-    const { valido } = req.body;
-    const data = await tsService.verificarDocumento(id, docId, valido);
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// =====================================================
-//  VISITA DOMICILIARIA - CORREGIDO
-// =====================================================
-
-exports.getVisitaDomiciliaria = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const visita = await tsService.getVisitaDomiciliaria(id);
-    res.json(visita);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.programarVisitaDomiciliaria = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { fecha_programada, observaciones } = req.body;
-
-    const data = await tsService.programarVisitaDomiciliaria(id, {
-      fecha_programada,
-      observaciones,
-    });
-
-    res.status(201).json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.actualizarVisitaDomiciliaria = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { fecha_programada, fecha_realizada, estado, observaciones, resultado } = req.body;
-
-    const data = await tsService.actualizarVisitaDomiciliaria(id, {
-      fecha_programada,
-      fecha_realizada,
-      estado,
-      observaciones,
-      resultado,
-    });
-
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// =====================================================
-//  INFORMES - CORREGIDO
-// =====================================================
-
-exports.informeEstadistico = async (req, res, next) => {
-  try {
-    const data = await tsService.informeEstadistico();
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.informeDetallado = async (req, res, next) => {
-  try {
-    const { tipo, periodo } = req.query || {};
-    const data = await tsService.informeDetallado({ tipo, periodo });
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// =====================================================
-//  ANUNCIOS (Noticias) - SIN CAMBIOS
-// =====================================================
-
-exports.listAnuncios = async (req, res, next) => {
-  try {
-    const anuncios = await tsService.listAnuncios();
-    res.json(anuncios);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.createAnuncio = async (req, res, next) => {
-  try {
-    const { titulo, contenido, visible_para } = req.body;
-    const publicado_por = req.user.id_usuario;
-
-    const nuevo = await tsService.createAnuncio({
-      titulo,
-      contenido,
-      visible_para,
-      publicado_por,
-    });
-
+    const nuevo = await service.createPeriodo(req.body);
     res.status(201).json(nuevo);
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
-exports.updateAnuncio = async (req, res, next) => {
+exports.updatePeriodo = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { titulo, contenido, visible_para } = req.body;
-
-    const actualizado = await tsService.updateAnuncio(id, {
-      titulo,
-      contenido,
-      visible_para,
-    });
-
-    res.json(actualizado);
+    await service.updatePeriodo(req.params.id, req.body);
+    res.json({ success: true });
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
-exports.deleteAnuncio = async (req, res, next) => {
+exports.deletePeriodo = async (req, res) => {
   try {
-    const { id } = req.params;
-    await tsService.deleteAnuncio(id);
+    await service.deletePeriodo(req.params.id);
     res.status(204).end();
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
-// =====================================================
-//  TIPOS DE BECA - SIN CAMBIOS
-// =====================================================
-
-exports.listTiposBeca = async (req, res, next) => {
+/* ============================================
+   CONVOCATORIAS
+============================================ */
+exports.listConvocatorias = async (req, res) => {
   try {
-    const tipos = await tsService.listTiposBeca();
-    res.json(tipos);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.createTipoBeca = async (req, res, next) => {
-  try {
-    const { codigo, nombre, modalidad, tope_mensual } = req.body;
-    const tipo = await tsService.createTipoBeca({ codigo, nombre, modalidad, tope_mensual });
-    res.status(201).json(tipo);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.updateTipoBeca = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { codigo, nombre, modalidad, tope_mensual } = req.body;
-    const tipo = await tsService.updateTipoBeca(id, { codigo, nombre, modalidad, tope_mensual });
-    res.json(tipo);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.deleteTipoBeca = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    await tsService.deleteTipoBeca(id);
-    res.status(204).end();
-  } catch (err) {
-    next(err);
-  }
-};
-
-// =====================================================
-//  CONVOCATORIAS - SIN CAMBIOS
-// =====================================================
-
-exports.listConvocatorias = async (req, res, next) => {
-  try {
-    const data = await tsService.listConvocatorias();
+    const data = await service.listConvocatorias();
     res.json(data);
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
-exports.abrirConvocatoria = async (req, res, next) => {
+exports.createConvocatoria = async (req, res) => {
   try {
-    const { id } = req.params;
-    const idFuncionario = req.user?.id_usuario || null;
-
-    const data = await tsService.cambiarEstadoConvocatoria(
-      id,
-      'ABIERTO',
-      idFuncionario
-    );
-
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.cerrarConvocatoria = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const idFuncionario = req.user?.id_usuario || null;
-
-    const data = await tsService.cambiarEstadoConvocatoria(
-      id,
-      'CERRADO',
-      idFuncionario
-    );
-
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// =====================================================
-//  CONSULTAS - SIN CAMBIOS
-// =====================================================
-
-exports.listConsultas = async (req, res, next) => {
-  try {
-    const consultas = await tsService.listConsultas();
-    res.json(consultas);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.getConsulta = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const consulta = await tsService.getConsulta(id);
-    res.json(consulta);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.responderConsulta = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { respuesta } = req.body;
-    const idFuncionario = req.user.id_usuario;
-
-    const data = await tsService.responderConsulta(id, respuesta, idFuncionario);
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// =====================================================
-//  CHATBOT - SIN CAMBIOS
-// =====================================================
-
-exports.listChatbotRespuestas = async (req, res, next) => {
-  try {
-    const data = await tsService.listChatbotRespuestas();
-    res.json(data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.createChatbotRespuesta = async (req, res, next) => {
-  try {
-    const { pregunta, respuesta } = req.body;
-    const nueva = await tsService.createChatbotRespuesta({ pregunta, respuesta });
+    const nueva = await service.createConvocatoria(req.body);
     res.status(201).json(nueva);
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
-exports.updateChatbotRespuesta = async (req, res, next) => {
+exports.updateConvocatoriaEstado = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { pregunta, respuesta } = req.body;
-    const upd = await tsService.updateChatbotRespuesta(id, { pregunta, respuesta });
-    res.json(upd);
+    const { estado } = req.body;
+    await service.updateConvocatoriaEstado(req.params.id, estado);
+    res.json({ success: true });
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
-exports.deleteChatbotRespuesta = async (req, res, next) => {
+exports.abrirConvocatoria = async (req, res) => {
   try {
-    const { id } = req.params;
-    await tsService.deleteChatbotRespuesta(id);
+    await service.updateConvocatoriaEstado(req.params.id, "ABIERTO");
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.cerrarConvocatoria = async (req, res) => {
+  try {
+    await service.updateConvocatoriaEstado(req.params.id, "CERRADO");
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ============================================
+   TIPOS DE BECA
+============================================ */
+exports.listTiposBeca = async (req, res) => {
+  try {
+    const data = await service.listTiposBeca();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getTipoBeca = async (req, res) => {
+  try {
+    const data = await service.getTipoBeca(req.params.id);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.createTipoBeca = async (req, res) => {
+  try {
+    const data = await service.createTipoBeca(req.body);
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateTipoBeca = async (req, res) => {
+  try {
+    await service.updateTipoBeca(req.params.id, req.body);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteTipoBeca = async (req, res) => {
+  try {
+    await service.deleteTipoBeca(req.params.id);
     res.status(204).end();
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ============================================
+   SOLICITUDES
+============================================ */
+exports.listSolicitudes = async (req, res) => {
+  try {
+    const data = await service.listSolicitudes(req.query);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getSolicitud = async (req, res) => {
+  try {
+    const data = await service.getSolicitud(req.params.id);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateSolicitudEstado = async (req, res) => {
+  try {
+    await service.updateSolicitudEstado(req.params.id, req.body);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.createSolicitud = async (req, res) => {
+  try {
+    const nueva = await service.createSolicitud(req.body);
+    res.status(201).json(nueva);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ============================================
+   SOCIOECONÓMICO (CORREGIDO)
+============================================ */
+exports.listCasosSocioeconomicos = async (req, res) => {
+  try {
+    const data = await service.listCasosSocioeconomicos();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ⭐ NUEVO: Crear info socioeconómica + aplicar fórmula */
+exports.createInfoSocioeconomica = async (req, res) => {
+  try {
+    const nueva = await service.createInfoSocioeconomica(req.body);
+
+    // Ejecutar asignación automática SOCIOECONÓMICA
+    await service.asignarTipoBecaAutomatico(req.body.id_solicitud);
+
+    res.status(201).json({ success: true, nueva });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ============================================
+   EVALUACIÓN ACADÉMICA
+============================================ */
+exports.listEvaluacionAcademica = async (req, res) => {
+  try {
+    const data = await service.listEvaluacionAcademica();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ============================================
+   ETAPAS DE CONVOCATORIA  (CORREGIDO)
+============================================ */
+exports.listEtapas = async (req, res) => {
+  try {
+    // 1) Prioridad: query param
+    let id_convocatoria = req.query.id_convocatoria;
+
+    // 2) Si no viene → usar path param
+    if (!id_convocatoria && req.params.id_convocatoria) {
+      id_convocatoria = req.params.id_convocatoria;
+    }
+
+    // 3) Si aún no viene → obtener la convocatoria activa
+    if (!id_convocatoria) {
+      const convocatorias = await service.listConvocatorias();
+      const activa = convocatorias.find(c => c.estado === "ABIERTO");
+
+      if (activa) id_convocatoria = activa.id_convocatoria;
+    }
+
+    // 4) Si aún no existe → no hay nada que mostrar
+    if (!id_convocatoria) {
+      return res.json([]);
+    }
+
+    const data = await service.listEtapas(id_convocatoria);
+    res.json(data);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.updateEtapa = async (req, res) => {
+  try {
+    const id_etapa = req.params.id;
+    const { id_convocatoria, estado } = req.body;
+    await service.updateEtapa(id_etapa, id_convocatoria, { estado });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+/* ============================================
+   APELACIONES
+============================================ */
+exports.listApelaciones = async (req, res) => {
+  try {
+    const data = await service.listApelaciones();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.createApelacion = async (req, res) => {
+  try {
+    const nueva = await service.createApelacion(req.body);
+    res.status(201).json(nueva);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateApelacion = async (req, res) => {
+  try {
+    await service.updateApelacion(req.params.id, req.body);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };

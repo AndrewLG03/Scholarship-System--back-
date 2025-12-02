@@ -1,85 +1,78 @@
-// src/routes/admin.routes.js
+// src/routes/admin_routes.js 
 const express = require('express');
-const tsController = require('../controllers/trabajadora.social.controller');
+const adminController = require('../controllers/trabajadora.social.controller');
 const { authMiddleware } = require('../middleware/auth.middleware');
 const { requireRole } = require('../middleware/role.middleware');
 
 const router = express.Router();
+
+// TODAS las rutas requieren TRABAJADORA SOCIAL
 router.use(authMiddleware, requireRole('TRABAJADORA_SOCIAL'));
 
-//  ANUNCIOS 
-router.get('/anuncios', tsController.listAnuncios);
-router.post('/anuncios', tsController.createAnuncio);
-router.put('/anuncios/:id', tsController.updateAnuncio);
-router.delete('/anuncios/:id', tsController.deleteAnuncio);
+/* =====================================================
+   PERIODOS
+===================================================== */
+router.get('/periodos', adminController.listPeriodos);
+router.get('/periodos/:id', adminController.getPeriodo);
+router.post('/periodos', adminController.createPeriodo);
+router.put('/periodos/:id', adminController.updatePeriodo);
+router.delete('/periodos/:id', adminController.deletePeriodo);
 
-// TIPOS DE BECA 
-// listado de tipos de beca
-router.get('/tipos-beca', tsController.listTiposBeca);
-// creación/edición/eliminación
-router.post('/tipos-beca', tsController.createTipoBeca);
-router.put('/tipos-beca/:id', tsController.updateTipoBeca);
-router.delete('/tipos-beca/:id', tsController.deleteTipoBeca);
-// asignar tipo de beca a solicitud
-router.put('/solicitudes/:id/tipo-beca', tsController.assignTipoBeca);
+/* =====================================================
+   CONVOCATORIAS
+===================================================== */
+router.get('/convocatorias', adminController.listConvocatorias);
+router.post('/convocatorias', adminController.createConvocatoria);
+router.put('/convocatorias/:id/estado', adminController.updateConvocatoriaEstado);
+router.put('/convocatorias/:id/abrir', adminController.abrirConvocatoria);
+router.put('/convocatorias/:id/cerrar', adminController.cerrarConvocatoria);
 
-// Activación de periodos de recepción (CONVOCATORIAS) 
-router.get('/convocatorias', tsController.listConvocatorias);
-router.put('/convocatorias/:id/abrir', tsController.abrirConvocatoria);
-router.put('/convocatorias/:id/cerrar', tsController.cerrarConvocatoria);
+/* =====================================================
+   TIPOS DE BECA
+===================================================== */
+router.get('/tipos-beca', adminController.listTiposBeca);
+router.get('/tipos-beca/:id', adminController.getTipoBeca);
+router.post('/tipos-beca', adminController.createTipoBeca);
+router.put('/tipos-beca/:id', adminController.updateTipoBeca);
+router.delete('/tipos-beca/:id', adminController.deleteTipoBeca);
 
-//  Cambiar estado/etapa de solicitud 
-router.put('/solicitudes/:id/estado', tsController.actualizarEstadoSolicitud);
+/* =====================================================
+   SOLICITUDES
+===================================================== */
+router.get('/solicitudes', adminController.listSolicitudes);
+router.get('/solicitudes/:id', adminController.getSolicitud);
+router.put('/solicitudes/:id/estado', adminController.updateSolicitudEstado);
+router.post('/solicitudes', adminController.createSolicitud);
 
-//  CONSULTAS 
-router.get('/consultas', tsController.listConsultas);
-router.get('/consultas/:id', tsController.getConsulta);
-router.post('/consultas/:id/responder', tsController.responderConsulta);
+/* =====================================================
+   INFO SOCIOECONÓMICA
+===================================================== */
+router.get('/socioeconomico/casos', adminController.listCasosSocioeconomicos);
 
-// CHATBOT
-router.get('/chatbot-respuestas', tsController.listChatbotRespuestas);
-router.post('/chatbot-respuestas', tsController.createChatbotRespuesta);
-router.put('/chatbot-respuestas/:id', tsController.updateChatbotRespuesta);
-router.delete('/chatbot-respuestas/:id', tsController.deleteChatbotRespuesta);
+// ⭐ RUTA NUEVA → CREA ESTUDIO SOCIOECONÓMICO + APLICA FÓRMULA
+router.post('/socioeconomico', adminController.createInfoSocioeconomica);
 
-// APROBACIÓN O DENEGACIÓN DE SOLICITUDES 
-router.put('/solicitudes/:id/aprobar', tsController.aprobarSolicitud);
-router.put('/solicitudes/:id/denegar', tsController.denegarSolicitud);
+/* =====================================================
+   EVALUACIÓN ACADÉMICA
+===================================================== */
+router.get('/academico/estudiantes', adminController.listEvaluacionAcademica);
 
-// VERIFICACIÓN DE DOCUMENTACIÓN 
-router.get('/solicitudes/:id/documentos', tsController.listDocumentosSolicitud);
-router.put('/solicitudes/:id/documentos/:docId/verificar', tsController.verificarDocumento);
+/* =====================================================
+   ETAPAS DE CONVOCATORIA
+===================================================== */
 
-// VISITA DOMICILIARIA 
-router.get('/solicitudes/:id/visita', tsController.getVisitaDomiciliaria);
-router.post('/solicitudes/:id/visita', tsController.programarVisitaDomiciliaria);
-router.put('/solicitudes/:id/visita', tsController.actualizarVisitaDomiciliaria);
+// Obtener etapas (acepta query o path param)
+router.get('/etapas', adminController.listEtapas);
+router.get('/etapas/:id_convocatoria', adminController.listEtapas);
 
-//  INFORMES 
-router.get('/informes/estadisticos', tsController.informeEstadistico);
-router.get('/informes/detalle', tsController.informeDetallado);
+// Actualizar etapa específica
+router.put('/etapas/:id', adminController.updateEtapa);
+/* =====================================================
+   APELACIONES
+===================================================== */
+router.get('/apelaciones', adminController.listApelaciones);
+router.post('/apelaciones', adminController.createApelacion);
+router.put('/apelaciones/:id', adminController.updateApelacion);
 
-// APELACIONES 
-router.get('/apelaciones', tsController.listApelaciones);
-router.get('/apelaciones/:id', tsController.getApelacion);
-router.post('/apelaciones', tsController.crearApelacion);
-router.put('/apelaciones/:id/resolver', tsController.resolverApelacion);
-
-// SUSPENSIÓN / REANUDACIÓN DE BECAS 
-router.put('/becas/:id/suspender', tsController.suspenderBeca);
-router.put('/becas/:id/reanudar', tsController.reanudarBeca);
-
-// CIERRE DE EXPEDIENTES 
-router.put('/expedientes/:id/cerrar', tsController.cerrarExpediente);
-
-
-// ======================= SOLICITUDES =======================
-router.get('/solicitudes', tsController.listSolicitudes);
-
-// ======================= ANÁLISIS SOCIOECONÓMICO =======================
-router.get('/socioeconomico/casos', tsController.listCasosSocioeconomicos);
-
-// ======================= EVALUACIÓN ACADÉMICA =======================
-router.get('/academico/estudiantes', tsController.listEvaluacionAcademica);
 
 module.exports = router;
