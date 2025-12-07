@@ -6,20 +6,21 @@ const { pool } = require('../config/database');
 exports.register = async (req, res, next) => {
     let connection;
     try {
-        const { email, password, name } = req.body;
+        const { email, password, name, role } = req.body;
         if (!email || !password) return res.status(400).json({ message: 'Email y password requeridos' });
 
         connection = await pool.getConnection();
 
         // comprobar si ya existe el email
-        const [rows] = await connection.query('SELECT id FROM Users WHERE email = ?', [email]);
+        const [rows] = await connection.query('SELECT id_usuario FROM usuarios WHERE correo = ?', [email]);
         if (rows.length > 0) {
             connection.release();
             return res.status(409).json({ message: 'Email ya registrado' });
         }
 
         const hashed = await bcrypt.hash(password, 10);
-        await connection.query('INSERT INTO Users (email, password, name) VALUES (?, ?, ?)', [email, hashed, name || null]);
+        const userRole = role || 'estudiante'; // Usar el rol enviado o 'estudiante' por defecto
+        await connection.query('INSERT INTO usuarios (correo, password, nombre, rol) VALUES (?, ?, ?, ?)', [email, hashed, name || null, userRole]);
 
         connection.release();
         res.status(201).json({ message: 'Usuario creado' });
@@ -37,10 +38,10 @@ exports.login = async (req, res, next) => {
 
         connection = await pool.getConnection();
         
-        // Buscar en tabla Users primero (admin)
-        let [rows] = await connection.query('SELECT id, password, name FROM Users WHERE email = ?', [email]);
+        // Buscar en tabla usuarios primero (admin)
+        let [rows] = await connection.query('SELECT id_usuario as id, password, nombre as name, rol, correo as email FROM usuarios WHERE correo = ?', [email]);
         
-        // Si no existe en Users, buscar en aspirantes
+        // Si no existe en usuarios, buscar en aspirantes
         if (rows.length === 0) {
             [rows] = await connection.query(
                 'SELECT id_usuario as id, correo as email, CONCAT(nombre, " ", apellido1) as name FROM aspirantes WHERE correo = ? OR id_usuario = ?',
@@ -70,7 +71,15 @@ exports.login = async (req, res, next) => {
         );
         
         connection.release();
-        res.json({ token });
+        res.json({ 
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                rol: user.rol || 'estudiante'
+            }
+        });
     } catch (err) {
         if (connection) connection.release();
         next(err);
@@ -89,8 +98,8 @@ exports.getMe = async (req, res, next) => {
 
         const connection = await pool.getConnection();
 
-        // Buscar en Users
-        let [rows] = await connection.query('SELECT id, email, name FROM Users WHERE id = ?', [userId]);
+        // Buscar en usuarios
+        let [rows] = await connection.query('SELECT id_usuario as id, correo as email, nombre as name, rol FROM usuarios WHERE id_usuario = ?', [userId]);
 
         // Si no existe, buscar en aspirantes
         if (rows.length === 0) {

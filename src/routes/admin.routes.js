@@ -28,6 +28,12 @@ router.put('/convocatorias/:id/abrir', adminController.abrirConvocatoria);
 router.put('/convocatorias/:id/cerrar', adminController.cerrarConvocatoria);
 
 /* =====================================================
+   ETAPAS
+===================================================== */
+router.get('/etapas', adminController.listEtapas);
+router.put('/etapas/:id', adminController.updateEtapa);
+
+/* =====================================================
    TIPOS DE BECA
 ===================================================== */
 router.get('/tipos-beca', adminController.listTiposBeca);
@@ -52,5 +58,12 @@ router.get('/socioeconomico/casos', adminController.listCasosSocioeconomicos);
    EVALUACIÓN ACADÉMICA
 ===================================================== */
 router.get('/academico/estudiantes', adminController.listEvaluacionAcademica);
+
+/* =====================================================
+   APELACIONES
+===================================================== */
+router.get('/apelaciones', adminController.listApelaciones);
+router.post('/apelaciones', adminController.createApelacion);
+router.put('/apelaciones/:id', adminController.updateApelacion);
 
 module.exports = router;

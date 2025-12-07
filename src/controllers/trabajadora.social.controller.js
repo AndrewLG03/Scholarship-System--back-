@@ -1,5 +1,6 @@
 const service = require('../services/trabajadora.social.service');
 
+
 /* ============================================
    PERIODOS
 ============================================ */
@@ -23,9 +24,12 @@ exports.getPeriodo = async (req, res) => {
 
 exports.createPeriodo = async (req, res) => {
   try {
+    console.log('📌 [createPeriodo] Body recibido:', req.body);
     const nuevo = await service.createPeriodo(req.body);
+    console.log('✅ [createPeriodo] Período creado:', nuevo);
     res.status(201).json(nuevo);
   } catch (err) {
+    console.error('❌ [createPeriodo] Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 };
@@ -62,9 +66,12 @@ exports.listConvocatorias = async (req, res) => {
 
 exports.createConvocatoria = async (req, res) => {
   try {
+    console.log('📌 [createConvocatoria] Body recibido:', req.body);
     const nueva = await service.createConvocatoria(req.body);
+    console.log('✅ [createConvocatoria] Convocatoria creada:', nueva);
     res.status(201).json(nueva);
   } catch (err) {
+    console.error('❌ [createConvocatoria] Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 };
@@ -175,13 +182,36 @@ exports.updateSolicitudEstado = async (req, res) => {
   }
 };
 
+exports.createSolicitud = async (req, res) => {
+  try {
+    const nueva = await service.createSolicitud(req.body);
+    res.status(201).json(nueva);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 /* ============================================
-   SOCIOECONÓMICO
+   SOCIOECONÓMICO (CORREGIDO)
 ============================================ */
 exports.listCasosSocioeconomicos = async (req, res) => {
   try {
     const data = await service.listCasosSocioeconomicos();
     res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ⭐ NUEVO: Crear info socioeconómica + aplicar fórmula */
+exports.createInfoSocioeconomica = async (req, res) => {
+  try {
+    const nueva = await service.createInfoSocioeconomica(req.body);
+
+    // Ejecutar asignación automática SOCIOECONÓMICA
+    await service.asignarTipoBecaAutomatico(req.body.id_solicitud);
+
+    res.status(201).json({ success: true, nueva });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -194,6 +224,91 @@ exports.listEvaluacionAcademica = async (req, res) => {
   try {
     const data = await service.listEvaluacionAcademica();
     res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ============================================
+   ETAPAS DE CONVOCATORIA  (CORREGIDO)
+============================================ */
+exports.listEtapas = async (req, res) => {
+  try {
+    // 1) Prioridad: query param
+    let id_convocatoria = req.query.id_convocatoria;
+    console.log('📌 [listEtapas] Query param:', req.query.id_convocatoria);
+
+    // 2) Si no viene → usar path param
+    if (!id_convocatoria && req.params.id_convocatoria) {
+      id_convocatoria = req.params.id_convocatoria;
+      console.log('📌 [listEtapas] Path param:', id_convocatoria);
+    }
+
+    // 3) Si aún no viene → obtener la convocatoria activa
+    if (!id_convocatoria) {
+      const convocatorias = await service.listConvocatorias();
+      const activa = convocatorias.find(c => c.estado === "ABIERTO");
+
+      if (activa) id_convocatoria = activa.id_convocatoria;
+      console.log('📌 [listEtapas] Convocatoria activa:', id_convocatoria);
+    }
+
+    // 4) Si aún no existe → no hay nada que mostrar
+    if (!id_convocatoria) {
+      console.log('📌 [listEtapas] Sin id_convocatoria, retornando []');
+      return res.json([]);
+    }
+
+    console.log('📌 [listEtapas] Obteniendo etapas para convocatoria:', id_convocatoria);
+    const data = await service.listEtapas(id_convocatoria);
+    console.log('📌 [listEtapas] Datos obtenidos:', data);
+    res.json(data);
+
+  } catch (err) {
+    console.error('❌ [listEtapas] Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.updateEtapa = async (req, res) => {
+  try {
+    const id_etapa = req.params.id;
+    const { id_convocatoria, estado } = req.body;
+    await service.updateEtapa(id_etapa, id_convocatoria, { estado });
+    
+    // Obtener y retornar las etapas actualizadas
+    const etapasActualizadas = await service.listEtapas(id_convocatoria);
+    res.json({ success: true, etapas: etapasActualizadas });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+/* ============================================
+   APELACIONES
+============================================ */
+exports.listApelaciones = async (req, res) => {
+  try {
+    const data = await service.listApelaciones();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.createApelacion = async (req, res) => {
+  try {
+    const nueva = await service.createApelacion(req.body);
+    res.status(201).json(nueva);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateApelacion = async (req, res) => {
+  try {
+    await service.updateApelacion(req.params.id, req.body);
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

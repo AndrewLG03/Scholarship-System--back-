@@ -17,8 +17,16 @@ const app = express();
 
 // Debug para TODAS las rutas /api
 app.use('/api', (req, res, next) => {
-  console.log('🔍 [DEBUG] Ruta recibida en /api:', req.method, req.originalUrl);
-  console.log('🔍 [DEBUG] Headers auth:', req.headers.authorization ? 'SI' : 'NO');
+  console.log(' [DEBUG] Ruta recibida en /api:', req.method, req.originalUrl);
+  console.log(' [DEBUG] Headers auth:', req.headers.authorization ? 'SI' : 'NO');
+  
+  // Deshabilitar caché para todas las respuestas /api
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate, private',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+  
   next();
 });
 

@@ -1,5 +1,6 @@
 // src/controllers/student.controller.js
 const { pool } = require('../config/database');
+const { decryptData, encryptData } = require('../utils/encryption');
 
 // Panel de administración del estudiante becado
 exports.getDashboardPanel = async (req, res, next) => {
@@ -320,6 +321,13 @@ exports.getExpediente = async (req, res, next) => {
 
     const info = infoRows[0]
 
+    // Desencriptar datos de ingresos y egresos
+    const infoDesencriptada = {
+      ...info,
+      ingreso_total: info.ingreso_total ? decryptData(info.ingreso_total) : null,
+      egreso_total: info.egreso_total ? decryptData(info.egreso_total) : null
+    }
+
     // 2) familiares ligados a esa info_socioeconomica
     const [famRows] = await pool.query(
       `
@@ -342,8 +350,8 @@ exports.getExpediente = async (req, res, next) => {
       socioeconomica: {
         ocupacion_padre: info.ocupacion_padre,
         ocupacion_madre: info.ocupacion_madre,
-        ingreso_total: info.ingreso_total,
-        egreso_total: info.egreso_total,
+        ingreso_total: info.ingreso_total ? decryptData(info.ingreso_total) : null,
+        egreso_total: info.egreso_total ? decryptData(info.egreso_total) : null,
         tipo_vivienda: info.tipo_vivienda,
         condicion_vivienda: info.condicion_vivienda,
         servicios_basicos: info.servicios_basicos,
@@ -426,8 +434,8 @@ exports.updateExpediente = async (req, res, next) => {
     const socioParams = [
       socio.ocupacion_padre || null,
       socio.ocupacion_madre || null,
-      toNumber(socio.ingreso_total),
-      toNumber(socio.egreso_total),
+      encryptData(socio.ingreso_total ? socio.ingreso_total.toString() : null),
+      encryptData(socio.egreso_total ? socio.egreso_total.toString() : null),
       socio.tipo_vivienda || null,
       socio.condicion_vivienda || null,
       socio.servicios_basicos || null,

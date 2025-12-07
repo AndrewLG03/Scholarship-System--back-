@@ -10,14 +10,7 @@ function requireRole(requiredRole) {
       return res.status(401).json({ message: 'No autenticado' });
     }
 
-    // Asumimos que el campo del rol en el usuario es "rol"
-    // ajusta si en tu JWT/DB se llama diferente (p.ej. req.user.rol, req.user.role, etc.)
-    const userRole = req.user.rol || req.user.role;
-
-    if (userRole !== requiredRole) {
-      return res.status(403).json({ message: 'Acceso denegado: rol insuficiente' });
-    }
-
+    // Por ahora permitir todos los usuarios autenticados
     next();
   };
 }

@@ -1,6 +1,7 @@
 // src/routes/auth.routes.js
 const express = require('express');
 const router = express.Router();
+const { decryptData } = require('../utils/encryption');
 
 let authController;
     try {
@@ -18,5 +19,21 @@ let authController;
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.get('/me', authController.getMe);
+
+// Endpoint para desencriptar datos
+router.post('/decrypt', (req, res) => {
+  try {
+    const { encryptedData } = req.body;
+    if (!encryptedData) {
+      return res.status(400).json({ error: 'encryptedData es requerido' });
+    }
+    
+    const decrypted = decryptData(encryptedData);
+    res.json({ decrypted });
+  } catch (err) {
+    console.error('Error desencriptando:', err);
+    res.status(500).json({ error: 'Error al desencriptar los datos' });
+  }
+});
 
 module.exports = router;
